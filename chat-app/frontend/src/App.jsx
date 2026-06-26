@@ -8,14 +8,22 @@ function App() {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    socket.on("chat-history", (history) => {
-      setMessages(history);
-    });
+  const handleHistory = (history) => {
+    setMessages(history);
+  };
 
-    socket.on("receive-message", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-    });
-  }, []);
+  const handleReceive = (msg) => {
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  socket.on("chat-history", handleHistory);
+  socket.on("receive-message", handleReceive);
+
+  return () => {
+    socket.off("chat-history", handleHistory);
+    socket.off("receive-message", handleReceive);
+  };
+}, []);
 
   const sendMessage = () => {
     if (!message) return;
