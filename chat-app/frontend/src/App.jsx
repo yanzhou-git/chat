@@ -8,36 +8,58 @@ function App() {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    socket.on("chat-history", (history) => {
+    const handleHistory = (history) => {
       setMessages(history);
-    });
+    };
 
-    socket.on("receive-message", (msg) => {
+    const handleReceive = (msg) => {
       setMessages((prev) => [...prev, msg]);
-    });
+    };
+
+    socket.on("chat-history", handleHistory);
+    socket.on("receive-message", handleReceive);
+
+    return () => {
+      socket.off("chat-history", handleHistory);
+      socket.off("receive-message", handleReceive);
+    };
   }, []);
 
   const sendMessage = () => {
-    if (!message) return;
+    if (!message.trim()) return; 
     socket.emit("send-message", message);
     setMessage("");
   };
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Chat App</h1>
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      sendMessage();
+    }
+  };
 
-      <div style={{ height: 300, overflow: "auto", border: "1px solid #ccc" }}>
-        {messages.map((m) => (
-          <div key={m.id}>{m.text}</div>
+  return (
+    <div style={{ padding: 20, maxWidth: 500, margin: "0 auto" }}>
+      <h1>💬 MigraCode Live Chat</h1>
+
+      <div style={{ height: 300, overflowY: "scroll", border: "1px solid #ccc", padding: 10, marginBottom: 10, borderRadius: 5 }}>
+        {messages.map((m, index) => (
+          
+          <div key={m.id || index} style={{ marginBottom: 8, padding: "4px 8px", background: "#f3f4f6", borderRadius: 4 }}>
+            {m.text}
+          </div>
         ))}
       </div>
 
-      <input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-      />
-      <button onClick={sendMessage}>Send</button>
+      <div style={{ display: "flex", gap: 10 }}>
+        <input
+          style={{ flex: 1, padding: 8 }}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown} 
+          placeholder="Type a message..."
+        />
+        <button style={{ padding: "8px 16px" }} onClick={sendMessage}>Send</button>
+      </div>
     </div>
   );
 }
