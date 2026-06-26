@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3001");
+const socket = io(window.location.hostname === "localhost" 
+  ? "http://localhost:3001" 
+  : window.location.origin.replace("5173", "3001").replace("5174", "3001")
+);
 
 function App() {
   const [message, setMessage] = useState("");
