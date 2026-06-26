@@ -21,10 +21,11 @@ io.on("connection", (socket) => {
 
   socket.emit("chat-history", messages);
 
-  socket.on("send-message", (msg) => {
+  socket.on("send-message", (data) => {
     const newMessage = {
-      id: Date.now(),
-      text: msg,
+      id: Date.now().toString(),
+      username: data.username,
+      text: data.text,
     };
 
     messages.push(newMessage);

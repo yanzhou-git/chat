@@ -1,65 +1,83 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:3001");
+const socket = io("http://127.0.0.1:3001");
 
 function App() {
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]); 
+  const [username, setUsername] = useState("");
+  const [joined, setJoined] = useState(false);
 
   useEffect(() => {
-    const handleHistory = (history) => {
+    socket.on("chat-history", (history) => {
       setMessages(history);
-    };
+    });
 
-    const handleReceive = (msg) => {
+    socket.on("receive-message", (msg) => {
       setMessages((prev) => [...prev, msg]);
-    };
-
-    socket.on("chat-history", handleHistory);
-    socket.on("receive-message", handleReceive);
+    });
 
     return () => {
-      socket.off("chat-history", handleHistory);
-      socket.off("receive-message", handleReceive);
+      socket.off("chat-history");
+      socket.off("receive-message");
     };
   }, []);
 
   const sendMessage = () => {
-    if (!message.trim()) return; 
-    socket.emit("send-message", message);
-    setMessage("");
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
+
+    socket.emit("send-message", {
+      username,
+      text: trimmedMessage,
+    });
+
+    setMessage(""); 
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  };
+  if (!joined) {
+    return (
+      <div style={{ padding: 20 }}>
+        <h1>Join Chat</h1>
+        <input
+          placeholder="Enter your username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <button
+          onClick={() => {
+            if (username.trim()) {
+              setJoined(true);
+            }
+          }}
+        >
+          Join
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 20, maxWidth: 500, margin: "0 auto" }}>
-      <h1>💬 MigraCode Live Chat</h1>
+    <div style={{ padding: 20 }}>
+      <h1>Chat App (User: {username})</h1>
 
-      <div style={{ height: 300, overflowY: "scroll", border: "1px solid #ccc", padding: 10, marginBottom: 10, borderRadius: 5 }}>
+      <div style={{ height: 300, overflowY: "auto", border: "1px solid #ccc", marginBottom: 10, padding: 10 }}>
         {messages.map((m, index) => (
-          
-          <div key={m.id || index} style={{ marginBottom: 8, padding: "4px 8px", background: "#f3f4f6", borderRadius: 4 }}>
-            {m.text}
+          <div key={m.id || index} style={{ marginBottom: 8 }}>
+            <strong>{m.username}: </strong>
+            <span>{m.text}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 10 }}>
-        <input
-          style={{ flex: 1, padding: 8 }}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown} 
-          placeholder="Type a message..."
-        />
-        <button style={{ padding: "8px 16px" }} onClick={sendMessage}>Send</button>
-      </div>
+      <input
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && sendMessage()} 
+        placeholder="Type a message..."
+      />
+      <button onClick={sendMessage} style={{ marginLeft: 5 }}>Send</button>
     </div>
   );
 }
